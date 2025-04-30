@@ -8,7 +8,7 @@ SCREEN_HEIGHT = 50 * 16  # = 800
 
 
 # Vitesse
-JOUEUR_VITESSE = 5
+JOUEUR_VITESSE = 1
 
 TILE_SIZE = 16        # Taille réelle dans le spritesheet
 TILE_SCALE = 3        # Facteur d'agrandissement à l'écran
