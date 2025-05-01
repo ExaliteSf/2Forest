@@ -2,7 +2,8 @@ import pygame
 from scripts.settings import JOUEUR_VITESSE
 
 class Player:
-    def __init__(self):
+    def __init__(self, position=(0, 0)):
+
         self.spritesheet = pygame.image.load("assets/characters/player.png").convert_alpha()
 
         self.frame_width = 36
@@ -35,7 +36,8 @@ class Player:
         self.moving = False
         self.current_frame = 0
         self.image = self.frames_idle_down[0]
-        self.rect = self.image.get_rect(center=(400, 300))
+        self.rect = self.image.get_rect(center=position)
+
 
         # Animation générale
         self.last_switch = pygame.time.get_ticks()
@@ -45,8 +47,8 @@ class Player:
         self.attacking = False
         self.attack_frame = 0
         self.attack_start_time = 0
-        self.attack_delay = 1000      # Délai entre attaques
-        self.attack_frame_duration = 100  # Durée d'une frame d'attaque
+        self.attack_delay = 1000
+        self.attack_frame_duration = 100
 
     def get_frame(self, cx, cy):
         x = cx - self.frame_width // 2
@@ -63,12 +65,10 @@ class Player:
         elif self.direction == "up":
             return self.frames_attack_up[self.attack_frame]
 
-    def update(self):
+    def update(self, collision_rects):
         keys = pygame.key.get_pressed()
-
         now = pygame.time.get_ticks()
 
-        # Déclenchement de l’attaque
         if keys[pygame.K_e] and not self.attacking:
             if now - self.attack_start_time >= self.attack_delay:
                 self.attacking = True
@@ -76,7 +76,6 @@ class Player:
                 self.attack_frame = 0
                 self.last_switch = now
 
-        # === Si en pleine attaque ===
         if self.attacking:
             if now - self.last_switch >= self.attack_frame_duration:
                 self.last_switch = now
@@ -88,34 +87,37 @@ class Player:
                     self.image = self.get_attack_frame()
             else:
                 self.image = self.get_attack_frame()
-            return  # ne rien faire d’autre pendant l’attaque
+            return
 
-        # === Déplacement normal ===
         self.moving = False
+        dx = dy = 0
 
         if keys[pygame.K_DOWN]:
-            self.rect.y += JOUEUR_VITESSE
+            dy += JOUEUR_VITESSE
             self.direction = "down"
             self.moving = True
         elif keys[pygame.K_RIGHT]:
-            self.rect.x += JOUEUR_VITESSE
+            dx += JOUEUR_VITESSE
             self.direction = "right"
             self.moving = True
         elif keys[pygame.K_UP]:
-            self.rect.y -= JOUEUR_VITESSE
+            dy -= JOUEUR_VITESSE
             self.direction = "up"
             self.moving = True
         elif keys[pygame.K_LEFT]:
-            self.rect.x -= JOUEUR_VITESSE
+            dx -= JOUEUR_VITESSE
             self.direction = "left"
             self.moving = True
 
-        # Animation standard
+        # Collision test
+        future_rect = self.rect.move(dx, dy)
+        if not any(future_rect.colliderect(c) for c in collision_rects):
+            self.rect = future_rect
+
         if now - self.last_switch >= self.switch_delay:
             self.last_switch = now
             self.current_frame = (self.current_frame + 1) % 6
 
-        # Choix des frames classiques
         if self.direction == "down":
             self.image = self.frames_walk_down[self.current_frame] if self.moving else self.frames_idle_down[self.current_frame]
         elif self.direction == "right":
@@ -125,5 +127,9 @@ class Player:
         elif self.direction == "up":
             self.image = self.frames_walk_up[self.current_frame] if self.moving else self.frames_idle_up[self.current_frame]
 
-    def draw(self, surface):
-        surface.blit(self.image, self.rect)
+    def draw(self, surface, camera):
+        surface.blit(self.image, camera.apply(self.rect))
+
+
+
+
