@@ -4,6 +4,7 @@ from scripts.settings import SCREEN_WIDTH, SCREEN_HEIGHT, VERT_FORET
 from scripts.player import Player
 from scripts.tiled_loader import TiledMap
 from scripts.camera import Camera
+from scripts.enemy import Enemy
 
 
 class Game:
@@ -30,10 +31,11 @@ class Game:
             zoom=3
         )
 
-        # Joueur au centre de la map
+        # Joueur et ennemi
         center_x = self.map.width // 2
         center_y = self.map.height // 2
         self.player = Player((center_x, center_y))
+        self.enemy = Enemy((center_x, center_y - 100))  # l’ennemi est juste au-dessus du joueur
 
     def run(self):
         running = True
@@ -43,17 +45,27 @@ class Game:
                 if event.type == pygame.QUIT:
                     running = False
 
-            # MAJ
+            # Mise à jour
             self.player.update(self.map.collision_rects)
+            self.enemy.update()
             self.camera.center_on(self.player.rect)
 
-            # DESSIN
+            # Dessin
             self.camera.render_surface.fill(VERT_FORET)
             self.map.draw(self.camera.render_surface, self.camera)
+
+            # Dessiner l’ennemi et son contour rouge
+            self.enemy.draw(self.camera.render_surface, self.camera)
+            pygame.draw.rect(
+                self.camera.render_surface,
+                (255, 0, 0),
+                self.camera.apply(self.enemy.rect),
+                2  # épaisseur du contour
+            )
+
             self.player.draw(self.camera.render_surface, self.camera)
 
             self.camera.draw_to_screen(self.screen)
-
             pygame.display.flip()
 
         pygame.quit()
